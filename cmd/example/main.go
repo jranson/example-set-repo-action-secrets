@@ -12,7 +12,7 @@ import (
 // - Set the GH_TOKEN env to a Github Personal Access Token or other credential
 // - Update the exampleSecrets map below with the desired name/values
 //   (or implement some other way to read in a map of secrets)
-// - run: go run cmd/example.main.go <orgName> <repoName>
+// - run: go run cmd/example/main.go <orgName> <repoName>
 
 var gitHubToken = os.Getenv("GH_TOKEN")
 
