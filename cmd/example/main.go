@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jranson/example-set-repo-action-secrets/pkg/runner"
 )
@@ -15,6 +16,11 @@ import (
 
 var gitHubToken = os.Getenv("GH_TOKEN")
 
+var exampleSecrets = map[string]string{
+	"SECRET_NAME_1": "secret value 1",
+	"SECRET_NAME_2": "secret value 2",
+}
+
 func main() {
 	if gitHubToken == "" {
 		panic("GH_TOKEN env not set")
@@ -22,7 +28,7 @@ func main() {
 
 	usage := func() {
 		fmt.Println("Usage:")
-		fmt.Println("\n  example-set-repo-action-secrets <orgName> <repoName>")
+		fmt.Println("\n  example-set-repo-action-secrets <orgName> <repoName1,repoName2>")
 		fmt.Println("\n\nExample:")
 		fmt.Println("\n  example-set-repo-action-secrets example-org example-repo")
 		fmt.Println()
@@ -34,15 +40,15 @@ func main() {
 		return
 	}
 
-	// you can pass these in from the command line, or read from a json file, etc.
-	exampleSecrets := map[string]string{
-		"SECRET_NAME_1": "secret value 1",
-		"SECRET_NAME_2": "secret value 2",
-	}
-
-	fmt.Println("Working on repo", os.Args[1], "/", os.Args[2])
-	err := runner.Run(gitHubToken, os.Args[1], os.Args[2], exampleSecrets)
-	if err != nil {
-		panic(err)
+	repos := strings.Split(os.Args[2], ",")
+	for _, repo := range repos {
+		if repo == "" {
+			continue
+		}
+		fmt.Println("Working on repo", os.Args[1], "/", repo)
+		err := runner.Run(gitHubToken, os.Args[1], repo, exampleSecrets)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
