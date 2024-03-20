@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,20 +12,23 @@ import (
 
 // Usage:
 // - Set the GH_TOKEN env to a Github Personal Access Token or other credential
-// - Update the exampleSecrets map below with the desired name/values
-//   (or implement some other way to read in a map of secrets)
+// - Create secrets.json file providing secret names as keys and their values.
+//   All keys and values must be strings.
 // - run: go run cmd/example/main.go <orgName> <repoName>
 
 var gitHubToken = os.Getenv("GH_TOKEN")
+var errInvalidSecrets = errors.New("secrets file values must all be strings")
 
-var exampleSecrets = map[string]string{
-	"SECRET_NAME_1": "secret value 1",
-	"SECRET_NAME_2": "secret value 2",
-}
+type secretsLookup map[string]string
 
 func main() {
 	if gitHubToken == "" {
 		panic("GH_TOKEN env not set")
+	}
+
+	secrets, err := loadSecrets()
+	if err != nil {
+		panic(err)
 	}
 
 	usage := func() {
@@ -46,9 +51,31 @@ func main() {
 			continue
 		}
 		fmt.Println("Working on repo", os.Args[1], "/", repo)
-		err := runner.Run(gitHubToken, os.Args[1], repo, exampleSecrets)
+		err := runner.Run(gitHubToken, os.Args[1], repo, secrets)
 		if err != nil {
 			panic(err)
 		}
 	}
+}
+
+func loadSecrets() (secretsLookup, error) {
+	b, err := os.ReadFile("secrets.json")
+	if err != nil {
+		return nil, err
+	}
+
+	lkp := make(map[string]any)
+	out := make(secretsLookup)
+	err = json.Unmarshal(b, &lkp)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range lkp {
+		if s, ok := v.(string); ok {
+			out[k] = s
+		} else {
+			return nil, errInvalidSecrets
+		}
+	}
+	return out, nil
 }
